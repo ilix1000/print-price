@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Print Price</title>
+<link rel="icon" href="icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#e9edf2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0e14" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Print Price">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+/* Layout: colored light blobs drift behind frosted glass panels; inputs left, sticky quote card right */
+:root {
+  --base: #e9edf2;
+  --ink: #12161b;
+  --muted: rgba(18, 22, 27, 0.58);
+  --glass: rgba(255, 255, 255, 0.34);
+  --glass-strong: rgba(255, 255, 255, 0.5);
+  --well: rgba(255, 255, 255, 0.42);
+  --edge: rgba(255, 255, 255, 0.75);
+  --hi: rgba(255, 255, 255, 0.95);
+  --lo: rgba(255, 255, 255, 0.25);
+  --shadow: rgba(30, 40, 60, 0.16);
+  --sheen: rgba(255, 255, 255, 0.55);
+  --blob1: #ff8a3d; --blob2: #36c2a8; --blob3: #8a7cff; --blob4: #ffd23f;
+  --accent: #f0661c;
+  --accent-glass: rgba(240, 102, 28, 0.78);
+  --fil: #1fa587; --elec: #e6a70f; --extra: #7d6ff0; --profit: #f0661c;
+  --font: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --base: #0b0e14; --ink: #f2f4f8; --muted: rgba(242, 244, 248, 0.6);
+    --glass: rgba(255, 255, 255, 0.07); --glass-strong: rgba(255, 255, 255, 0.11);
+    --well: rgba(255, 255, 255, 0.07); --edge: rgba(255, 255, 255, 0.18);
+    --hi: rgba(255, 255, 255, 0.35); --lo: rgba(255, 255, 255, 0.05);
+    --shadow: rgba(0, 0, 0, 0.45); --sheen: rgba(255, 255, 255, 0.14);
+    --blob1: #c2410c; --blob2: #0f766e; --blob3: #5b4bd6; --blob4: #a16207;
+    --accent: #ff8a4c; --accent-glass: rgba(255, 122, 51, 0.55);
+    --fil: #3fd1ad; --elec: #f5c542; --extra: #a99cff; --profit: #ff8a4c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --base: #0b0e14; --ink: #f2f4f8; --muted: rgba(242, 244, 248, 0.6);
+  --glass: rgba(255, 255, 255, 0.07); --glass-strong: rgba(255, 255, 255, 0.11);
+  --well: rgba(255, 255, 255, 0.07); --edge: rgba(255, 255, 255, 0.18);
+  --hi: rgba(255, 255, 255, 0.35); --lo: rgba(255, 255, 255, 0.05);
+  --shadow: rgba(0, 0, 0, 0.45); --sheen: rgba(255, 255, 255, 0.14);
+  --blob1: #c2410c; --blob2: #0f766e; --blob3: #5b4bd6; --blob4: #a16207;
+  --accent: #ff8a4c; --accent-glass: rgba(255, 122, 51, 0.55);
+  --fil: #3fd1ad; --elec: #f5c542; --extra: #a99cff; --profit: #ff8a4c;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--base); color: var(--ink);
+  font-family: var(--font); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 26px 40px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ambient light behind the glass */
+.bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.bg i { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.85; animation: drift 26s ease-in-out infinite alternate; }
+.bg i:nth-child(1) { width: 46vw; height: 46vw; left: -10vw; top: -12vw; background: var(--blob1); }
+.bg i:nth-child(2) { width: 40vw; height: 40vw; right: -8vw; top: 10vh; background: var(--blob2); animation-duration: 32s; animation-delay: -8s; }
+.bg i:nth-child(3) { width: 38vw; height: 38vw; left: 22vw; bottom: -16vw; background: var(--blob3); animation-duration: 29s; animation-delay: -14s; }
+.bg i:nth-child(4) { width: 22vw; height: 22vw; right: 24vw; bottom: 6vh; background: var(--blob4); animation-duration: 23s; animation-delay: -4s; opacity: .6; }
+@keyframes drift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(6vw, 4vh) scale(1.12); }
+  100% { transform: translate(-4vw, 8vh) scale(0.94); }
+}
+@media (prefers-reduced-motion: reduce) { .bg i { animation: none; } }
+
+/* Liquid glass material */
+.glass {
+  position: relative; isolation: isolate;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  backdrop-filter: blur(26px) saturate(190%);
+  border: 1px solid var(--edge);
+  border-radius: 26px;
+  box-shadow:
+    inset 0 1.5px 0 var(--hi),
+    inset 0 -1px 0 var(--lo),
+    inset 0 0 22px var(--lo),
+    0 12px 40px -8px var(--shadow);
+}
+.glass::before {  /* specular sheen that follows the pointer */
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
+  background:
+    radial-gradient(420px circle at var(--mx, 15%) var(--my, 0%), var(--sheen), transparent 60%),
+    linear-gradient(160deg, var(--sheen) 0%, transparent 35%);
+  opacity: .7;
+}
+
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 22px; }
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; border-radius: 30px; }
+.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.brand img { width: 48px; height: 48px; border-radius: 14px; box-shadow: 0 6px 16px -6px var(--shadow); }
+h1 { font-weight: 700; font-size: clamp(1.4rem, 3vw, 1.85rem); line-height: 1.1; margin: 0; letter-spacing: -0.02em; }
+.sub { color: var(--muted); margin: 3px 0 0; font-size: 13.5px; }
+
+.seg { position: relative; display: inline-flex; padding: 4px; border-radius: 999px; background: var(--well); border: 1px solid var(--edge); box-shadow: inset 0 1px 3px var(--shadow); }
+.seg .thumb { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); border-radius: 999px; background: var(--glass-strong); border: 1px solid var(--edge); box-shadow: inset 0 1px 0 var(--hi), 0 4px 12px -2px var(--shadow); transition: transform .35s cubic-bezier(.3, 1.4, .5, 1); }
+.seg[data-cur="USD"] .thumb { transform: translateX(100%); }
+.seg button { position: relative; z-index: 1; font: 600 13px var(--font); border: 0; background: transparent; color: var(--muted); padding: 7px 18px; border-radius: 999px; cursor: pointer; min-width: 64px; }
+.seg button[aria-pressed="true"] { color: var(--ink); }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 390px); gap: 22px; align-items: start; }
+
+/* Floating price pill, phones only */
+.pricebar { display: none; }
+@media (max-width: 860px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  body { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+  .pricebar {
+    display: flex; position: fixed; z-index: 5; cursor: pointer;
+    left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 22px; border-radius: 999px; color: var(--ink); font: inherit;
+    background: var(--glass-strong); transition: opacity .25s, transform .25s;
+  }
+  .pricebar span { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .pricebar strong { font: 700 22px var(--font); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .pricebar.away { opacity: 0; transform: translateY(20px); pointer-events: none; }
+}
+
+.inputs { display: grid; gap: 18px; }
+fieldset { margin: 0; padding: 18px 20px 20px; display: grid; gap: 14px; min-width: 0; }
+legend { float: left; width: 100%; font: 600 11.5px var(--font); letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); padding: 0; display: flex; align-items: center; gap: 8px; }
+legend + * { clear: both; }
+legend .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+legend .opt { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; min-width: 0; align-content: start; }
+label small { color: var(--muted); font-weight: 400; font-size: 12px; }
+.field {
+  display: flex; align-items: center; min-width: 0;
+  background: var(--well); border: 1px solid var(--edge); border-radius: 14px;
+  box-shadow: inset 0 1px 3px var(--shadow), inset 0 -1px 0 var(--lo);
+  transition: box-shadow .2s, border-color .2s;
+}
+.field:focus-within { border-color: var(--accent); box-shadow: inset 0 1px 3px var(--shadow), 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent); }
+.field input, .field select { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: 500 15px var(--mono); padding: 10px 12px; font-variant-numeric: tabular-nums; }
+.field select { font-family: var(--font); font-size: 14px; cursor: pointer; }
+.field select option { background: var(--base); color: var(--ink); }
+.field input:focus, .field select:focus { outline: none; }
+.field .unit { font: 12px var(--mono); color: var(--muted); padding: 0 12px; white-space: nowrap; }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+.hint b { color: var(--ink); font: 500 12.5px var(--mono); }
+
+/* G-code import */
+.drop { padding: 16px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; border-style: dashed; transition: background .2s, border-color .2s; }
+.drop.over { border-color: var(--accent); background: var(--glass-strong); }
+.drop-text { flex: 1 1 260px; display: grid; gap: 2px; min-width: 0; }
+.drop-text strong { font-size: 15px; }
+#dropStatus { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+#dropStatus.ok { color: var(--ink); }
+#dropStatus.err { color: var(--accent); }
+.drop label.btn { display: inline-flex; }
+.drop .adj { flex-basis: 100%; display: flex; gap: 8px; align-items: center; font-weight: 500; font-size: 12.5px; color: var(--muted); cursor: pointer; }
+.drop .adj input { accent-color: var(--accent); margin: 0; }
+
+/* Quote card */
+.quote { position: sticky; top: 18px; padding: 22px; display: grid; gap: 18px; background: var(--glass-strong); border-radius: 30px; }
+.quote h2 { margin: 0; font: 600 11.5px var(--font); letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
+.price { display: grid; gap: 3px; }
+.price .big { font: 700 clamp(2.4rem, 6vw, 3.2rem)/1 var(--font); letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
+.price .big span { font-size: 0.42em; font-weight: 600; color: var(--muted); margin-left: 6px; letter-spacing: 0; }
+.price .range, .price .alt { font: 13px var(--mono); color: var(--muted); }
+.bar { display: flex; height: 14px; border-radius: 999px; overflow: hidden; background: var(--well); border: 1px solid var(--edge); box-shadow: inset 0 1px 3px var(--shadow); }
+.bar i { display: block; height: 100%; transition: width .4s cubic-bezier(.3, 1.2, .5, 1); box-shadow: inset 0 1px 0 rgba(255,255,255,.45); }
+@media (prefers-reduced-motion: reduce) { .bar i, .seg .thumb { transition: none; } }
+.lines { display: grid; gap: 8px; margin: 0; }
+.lines div { display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: baseline; font-size: 14px; }
+.lines .sw { width: 10px; height: 10px; border-radius: 3px; align-self: center; }
+.lines dt small { color: var(--muted); font-size: 12px; margin-left: 4px; }
+.lines dd { margin: 0; font: 500 14px var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+.lines .total { border-top: 1px solid var(--edge); padding-top: 9px; font-weight: 700; }
+.tiers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tier { padding: 10px 6px; display: grid; gap: 2px; text-align: center; border-radius: 18px; background: var(--well); box-shadow: inset 0 1px 0 var(--hi), 0 6px 18px -10px var(--shadow); cursor: pointer; font: inherit; color: inherit; border: 1px solid var(--edge); }
+.tier.on { background: var(--accent-glass); color: #fff; border-color: rgba(255,255,255,.55); }
+.tier.on .t, .tier.on .p { color: rgba(255,255,255,.85); }
+.tier .t { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+.tier .v { font: 600 15px var(--mono); font-variant-numeric: tabular-nums; }
+.tier .p { font: 11px var(--mono); color: var(--muted); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { font: 600 13px var(--font); color: var(--ink); padding: 9px 16px; border-radius: 999px; cursor: pointer; background: var(--glass-strong); border: 1px solid var(--edge); box-shadow: inset 0 1px 0 var(--hi), 0 6px 16px -8px var(--shadow); transition: transform .15s; }
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: scale(.97); }
+.btn.primary { background: var(--accent-glass); color: #fff; border-color: rgba(255,255,255,.55); }
+.toast { font-size: 12.5px; color: var(--muted); }
+.seg button:focus-visible, .btn:focus-visible, .tier:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+textarea#copyFallback { width: 100%; font: 12px var(--mono); background: var(--well); color: var(--ink); border: 1px solid var(--edge); border-radius: 14px; padding: 10px; }
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+<div class="wrap">
+  <header class="glass">
+    <div class="brand">
+      <img src="icon.png" alt="">
+      <div>
+        <h1>Print Price</h1>
+        <p class="sub">Filament + electricity + your profit = the price you ask.</p>
+      </div>
+    </div>
+    <div class="seg" id="seg" data-cur="RSD" role="group" aria-label="Currency">
+      <span class="thumb"></span>
+      <button type="button" id="curRSD" aria-pressed="true">RSD</button>
+      <button type="button" id="curUSD" aria-pressed="false">USD</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <form class="inputs" id="form" autocomplete="off">
+      <div class="drop glass" id="drop">
+        <div class="drop-text">
+          <strong>Import G-code</strong>
+          <span id="dropStatus">Drop a .gcode or Bambu .gcode.3mf file here to fill in the weight and print time.</span>
+        </div>
+        <label class="btn primary" for="file">Choose file</label>
+        <input id="file" type="file" accept=".gcode,.gco,.g,.3mf" hidden>
+        <label class="adj" id="adjWrap" for="adjTime" hidden><input type="checkbox" id="adjTime" checked> The slicer's time is at 100% speed, so shorten it for the speed mode</label>
+      </div>
+
+      <fieldset class="glass">
+        <legend><span class="dot" style="background:var(--fil);color:var(--fil)"></span>Filament</legend>
+        <div class="row">
+          <label for="grams">Filament used
+            <span class="field"><input id="grams" type="number" min="0" step="1" value="100"><span class="unit">g</span></span>
+          </label>
+          <label for="kgPrice">Spool price
+            <span class="field"><input id="kgPrice" type="number" min="0" step="any" value="1500"><span class="unit cur-unit">RSD / kg</span></span>
+          </label>
+          <label for="waste">Waste (purge, supports)
+            <span class="field"><input id="waste" type="number" min="0" step="1" value="0"><span class="unit">%</span></span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="glass">
+        <legend><span class="dot" style="background:var(--elec);color:var(--elec)"></span>Print time &amp; electricity</legend>
+        <div class="row">
+          <label for="hours">Hours
+            <span class="field"><input id="hours" type="number" min="0" step="1" value="6"><span class="unit">h</span></span>
+          </label>
+          <label for="minutes">Minutes
+            <span class="field"><input id="minutes" type="number" min="0" max="59" step="1" value="0"><span class="unit">min</span></span>
+          </label>
+          <label for="speed">Speed mode
+            <span class="field"><select id="speed">
+              <option value="0.85" data-pct="50">Silent · 50%</option>
+              <option value="1" data-pct="100">Standard · 100%</option>
+              <option value="1.2" data-pct="125" selected>Ultra fast · 125%</option>
+              <option value="1.4" data-pct="166">Ludicrous · 166%</option>
+            </select></span>
+          </label>
+        </div>
+        <div class="row">
+          <label for="watts">Printer power at 100%
+            <span class="field"><input id="watts" type="number" min="0" step="1" value="150"><span class="unit">W</span></span>
+            <small>Average draw while printing, bed heated</small>
+          </label>
+          <label for="kwh">Electricity price
+            <span class="field"><input id="kwh" type="number" min="0" step="any" value="12"><span class="unit cur-unit-kwh">RSD / kWh</span></span>
+            <small>From your EPS bill (green / blue / red zone)</small>
+          </label>
+        </div>
+        <p class="hint" id="powerHint"></p>
+      </fieldset>
+
+      <fieldset class="glass">
+        <legend><span class="dot" style="background:var(--extra);color:var(--extra)"></span>Extras <span class="opt">(optional)</span></legend>
+        <div class="row">
+          <label for="wear">Machine wear
+            <span class="field"><input id="wear" type="number" min="0" step="any" value="0"><span class="unit cur-unit-h">RSD / h</span></span>
+            <small>Nozzles, belts, PEI sheet</small>
+          </label>
+          <label for="extra">Packaging &amp; other
+            <span class="field"><input id="extra" type="number" min="0" step="any" value="0"><span class="unit cur-unit-plain">RSD</span></span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="glass">
+        <legend><span class="dot" style="background:var(--profit);color:var(--profit)"></span>Profit</legend>
+        <div class="row">
+          <label for="pMin">Minimum profit
+            <span class="field"><input id="pMin" type="number" min="0" step="any" value="300"><span class="unit cur-unit-plain">RSD</span></span>
+          </label>
+          <label for="pMax">Maximum profit
+            <span class="field"><input id="pMax" type="number" min="0" step="any" value="400"><span class="unit cur-unit-plain">RSD</span></span>
+          </label>
+          <label for="roundTo">Round price to
+            <span class="field"><select id="roundTo">
+              <option value="1">No rounding</option>
+              <option value="10" selected>Nearest 10</option>
+              <option value="50">Nearest 50</option>
+              <option value="100">Nearest 100</option>
+            </select></span>
+          </label>
+        </div>
+        <label for="rate">Exchange rate
+          <span class="field"><span class="unit">1 USD =</span><input id="rate" type="number" min="0.01" step="any" value="100"><span class="unit">RSD</span></span>
+        </label>
+      </fieldset>
+    </form>
+
+    <aside class="quote glass" aria-live="polite">
+      <h2>Selling price</h2>
+      <div class="price">
+        <div class="big" id="bigPrice">—</div>
+        <div class="range" id="range"></div>
+        <div class="alt" id="alt"></div>
+      </div>
+      <div class="bar" aria-hidden="true">
+        <i id="bFil" style="background:var(--fil)"></i>
+        <i id="bElec" style="background:var(--elec)"></i>
+        <i id="bExtra" style="background:var(--extra)"></i>
+        <i id="bProfit" style="background:var(--profit)"></i>
+      </div>
+      <dl class="lines">
+        <div><span class="sw" style="background:var(--fil)"></span><dt>Filament <small id="filNote"></small></dt><dd id="cFil"></dd></div>
+        <div><span class="sw" style="background:var(--elec)"></span><dt>Electricity <small id="elecNote"></small></dt><dd id="cElec"></dd></div>
+        <div><span class="sw" style="background:var(--extra)"></span><dt>Extras</dt><dd id="cExtra"></dd></div>
+        <div class="total"><span></span><dt>Your cost</dt><dd id="cTotal"></dd></div>
+        <div><span class="sw" style="background:var(--profit)"></span><dt>Profit</dt><dd id="cProfit"></dd></div>
+      </dl>
+      <div class="tiers" role="group" aria-label="Price tier">
+        <button type="button" class="tier" data-tier="low"><span class="t">Low</span><span class="v" id="tLow"></span><span class="p" id="tLowP"></span></button>
+        <button type="button" class="tier on" data-tier="mid"><span class="t">Middle</span><span class="v" id="tMid"></span><span class="p" id="tMidP"></span></button>
+        <button type="button" class="tier" data-tier="high"><span class="t">High</span><span class="v" id="tHigh"></span><span class="p" id="tHighP"></span></button>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn primary" id="copy">Copy quote</button>
+        <button type="button" class="btn" id="reset">Reset to example</button>
+        <span class="toast" id="toast"></span>
+      </div>
+      <textarea id="copyFallback" rows="6" hidden readonly></textarea>
+    </aside>
+    <button type="button" class="pricebar glass" id="pricebar" aria-label="Show price details"><span>Selling price</span><strong id="barPrice"></strong></button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const ids = ["grams","kgPrice","waste","hours","minutes","speed","watts","kwh","wear","extra","pMin","pMax","roundTo","rate"];
+  const moneyIds = ["kgPrice","kwh","wear","extra","pMin","pMax"];
+  const defaults = {}; ids.forEach((k) => defaults[k] = $(k).value);
+  let cur = "RSD";
+  let tier = "mid";
+  const KEY = "print-price-app-v1";
+
+  const num = (id) => { const v = parseFloat($(id).value); return isFinite(v) && v > 0 ? v : 0; };
+  const digits = (c) => c === "USD" ? 2 : 0;
+  const fmtN = (v, c = cur) => v.toLocaleString("en-US", { minimumFractionDigits: digits(c), maximumFractionDigits: digits(c) });
+  const fmt = (v, c = cur) => fmtN(v, c) + " " + c;
+  const roundUp = (v, step) => Math.ceil(v / step - 1e-9) * step;
+
+  function calc() {
+    const grams = num("grams"), kgPrice = num("kgPrice"), waste = num("waste");
+    const hours = num("hours") + Math.min(num("minutes"), 59) / 60;
+    const factor = parseFloat($("speed").value);
+    const watts = num("watts") * factor;
+    const kwhUsed = watts / 1000 * hours;
+
+    const filament = grams * (1 + waste / 100) / 1000 * kgPrice;
+    const electricity = kwhUsed * num("kwh");
+    const extras = num("wear") * hours + num("extra");
+    const cost = filament + electricity + extras;
+
+    const pMin = num("pMin"), pMax = Math.max(num("pMax"), pMin), pMid = (pMin + pMax) / 2;
+    let step = parseFloat($("roundTo").value);
+    if (cur === "USD") step = step === 1 ? 0.01 : step / 100;  // keep rounding sensible in dollars
+    const low = roundUp(cost + pMin, step), mid = roundUp(cost + pMid, step), high = roundUp(cost + pMax, step);
+    return { grams, waste, hours, watts, kwhUsed, filament, electricity, extras, cost, low, mid, high };
+  }
+
+  function render() {
+    const r = calc();
+    const other = cur === "RSD" ? "USD" : "RSD";
+    const rate = num("rate") || 100;
+    const conv = (v) => cur === "RSD" ? v / rate : v * rate;
+    const price = r[tier];
+
+    $("bigPrice").innerHTML = fmtN(price) + "<span>" + cur + "</span>";
+    $("range").textContent = "Range " + fmt(r.low) + " – " + fmt(r.high);
+    $("alt").textContent = "≈ " + fmt(conv(price), other);
+    $("barPrice").textContent = fmt(price);
+
+    $("cFil").textContent = fmt(r.filament);
+    $("cElec").textContent = fmt(r.electricity);
+    $("cExtra").textContent = fmt(r.extras);
+    $("cTotal").textContent = fmt(r.cost);
+    $("cProfit").textContent = fmt(price - r.cost);
+    $("filNote").textContent = Math.round(r.grams * (1 + r.waste / 100)) + " g";
+    $("elecNote").textContent = r.kwhUsed.toFixed(2) + " kWh";
+
+    $("tLow").textContent = fmt(r.low);   $("tLowP").textContent = "+" + fmtN(r.low - r.cost);
+    $("tMid").textContent = fmt(r.mid);   $("tMidP").textContent = "+" + fmtN(r.mid - r.cost);
+    $("tHigh").textContent = fmt(r.high); $("tHighP").textContent = "+" + fmtN(r.high - r.cost);
+    document.querySelectorAll(".tier").forEach((b) => b.classList.toggle("on", b.dataset.tier === tier));
+
+    const total = price || 1;
+    $("bFil").style.width = (r.filament / total * 100) + "%";
+    $("bElec").style.width = (r.electricity / total * 100) + "%";
+    $("bExtra").style.width = (r.extras / total * 100) + "%";
+    $("bProfit").style.width = (Math.max(price - r.cost, 0) / total * 100) + "%";
+
+    const sp = $("speed").selectedOptions[0].textContent.split("·")[0].trim();
+    $("powerHint").innerHTML = sp + " mode draws about <b>" + Math.round(r.watts) + " W</b> for <b>" +
+      r.hours.toFixed(2).replace(/\.00$/, "") + " h</b> = <b>" + r.kwhUsed.toFixed(2) + " kWh</b>.";
+
+    document.querySelector(".cur-unit").textContent = cur + " / kg";
+    document.querySelector(".cur-unit-kwh").textContent = cur + " / kWh";
+    document.querySelector(".cur-unit-h").textContent = cur + " / h";
+    document.querySelectorAll(".cur-unit-plain").forEach((e) => e.textContent = cur);
+    $("seg").dataset.cur = cur;
+    $("curRSD").setAttribute("aria-pressed", cur === "RSD");
+    $("curUSD").setAttribute("aria-pressed", cur === "USD");
+    save();
+  }
+
+  function setCurrency(next) {
+    if (next === cur) return;
+    const rate = num("rate") || 100;
+    moneyIds.forEach((id) => {
+      const v = parseFloat($(id).value);
+      if (!isFinite(v)) return;
+      const nv = next === "USD" ? v / rate : v * rate;
+      $(id).value = next === "USD" ? +nv.toFixed(3) : +nv.toFixed(2);
+    });
+    cur = next;
+    render();
+  }
+
+  function save() {
+    try { const s = { cur, tier }; ids.forEach((k) => s[k] = $(k).value); localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {}
+  }
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY) || "null");
+      if (!s) return;
+      ids.forEach((k) => { if (s[k] != null) $(k).value = s[k]; });
+      if (s.cur === "USD" || s.cur === "RSD") cur = s.cur;
+      if (["low","mid","high"].includes(s.tier)) tier = s.tier;
+    } catch (e) {}
+  }
+
+  function quoteText() {
+    const r = calc();
+    return [
+      "3D print quote",
+      "Filament: " + Math.round(r.grams) + " g → " + fmt(r.filament),
+      "Electricity: " + r.kwhUsed.toFixed(2) + " kWh → " + fmt(r.electricity),
+      r.extras ? "Extras: " + fmt(r.extras) : null,
+      "Cost: " + fmt(r.cost),
+      "Selling price: " + fmt(r[tier])
+    ].filter(Boolean).join("\n");
+  }
+
+  // ---- G-code / 3MF import ----
+  let imported = null;  // { seconds } from the slicer, at 100% speed
+  const fmtDur = (s) => { const m = Math.round(s / 60); return Math.floor(m / 60) + "h " + (m % 60) + "m"; };
+  const numsIn = (s) => (s.match(/\d+(?:\.\d+)?/g) || []).map(parseFloat);
+  const sumIn = (s) => numsIn(s).reduce((a, b) => a + b, 0);
+  const GRAMS_PER_M = Math.PI * 0.0875 * 0.0875 * 100 * 1.24;  // 1.75 mm filament at PLA density 1.24 g/cm³
+
+  function parseDuration(s) {
+    let t = 0, m; const re = /(\d+(?:\.\d+)?)\s*(d|h|m|s)/gi;
+    while ((m = re.exec(s))) t += parseFloat(m[1]) * { d: 86400, h: 3600, m: 60, s: 1 }[m[2].toLowerCase()];
+    return t || null;
+  }
+
+  function parseGcode(text) {
+    const out = { grams: null, seconds: null, note: "" };
+    let m;
+    if ((m = text.match(/;\s*total filament weight \[g\]\s*:\s*([^\n]+)/i))) out.grams = sumIn(m[1]);          // Bambu / Orca
+    else if ((m = text.match(/;\s*total filament used \[g\]\s*=\s*([^\n]+)/i))) out.grams = sumIn(m[1]);      // Prusa
+    else if ((m = text.match(/;\s*filament used \[g\]\s*=\s*([^\n]+)/i))) out.grams = sumIn(m[1]);            // Prusa / Orca
+    else if ((m = text.match(/;\s*Plastic weight:\s*([\d.]+)\s*g/i))) out.grams = parseFloat(m[1]);           // Simplify3D
+    else if ((m = text.match(/;\s*Filament used:\s*([^\n]+)/i))) {                                            // Cura (metres)
+      out.grams = sumIn(m[1]) * GRAMS_PER_M; out.note = "Weight worked out from filament length (1.75 mm PLA).";
+    } else if ((m = text.match(/;\s*filament used \[mm\]\s*=\s*([^\n]+)/i))) {
+      out.grams = sumIn(m[1]) / 1000 * GRAMS_PER_M; out.note = "Weight worked out from filament length (1.75 mm PLA).";
+    }
+    if ((m = text.match(/;\s*total estimated time:\s*([^;\n]+)/i))) out.seconds = parseDuration(m[1]);       // Bambu / Orca
+    else if ((m = text.match(/;\s*estimated printing time \(normal mode\)\s*=\s*([^\n]+)/i))) out.seconds = parseDuration(m[1]);
+    else if ((m = text.match(/;TIME:(\d+)/))) out.seconds = parseInt(m[1], 10);                              // Cura
+    else if ((m = text.match(/;\s*Build time:\s*([^\n]+)/i))) out.seconds = parseDuration(m[1]);              // Simplify3D
+    return out;
+  }
+
+  async function readGcodeText(file) {
+    // Slicers put the summary at the start or the end, so big files only need both ends
+    const CH = 2 * 1024 * 1024;
+    if (file.size <= CH * 2) return file.text();
+    return (await file.slice(0, CH).text()) + "\n" + (await file.slice(file.size - CH).text());
+  }
+
+  async function openZip(file) {
+    const buf = await file.arrayBuffer(), dv = new DataView(buf), dec = new TextDecoder();
+    let eocd = -1;
+    for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error("This .3mf file looks damaged.");
+    const entries = {};
+    let p = dv.getUint32(eocd + 16, true);
+    for (let k = dv.getUint16(eocd + 10, true); k > 0 && dv.getUint32(p, true) === 0x02014b50; k--) {
+      const nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true);
+      entries[dec.decode(new Uint8Array(buf, p + 46, nl))] =
+        { method: dv.getUint16(p + 10, true), size: dv.getUint32(p + 20, true), off: dv.getUint32(p + 42, true) };
+      p += 46 + nl + el + cl;
+    }
+    const text = async (name) => {
+      const e = entries[name]; if (!e) return null;
+      const start = e.off + 30 + dv.getUint16(e.off + 26, true) + dv.getUint16(e.off + 28, true);
+      const data = new Uint8Array(buf, start, e.size);
+      if (e.method === 0) return dec.decode(data);
+      return new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();
+    };
+    return { names: Object.keys(entries), text };
+  }
+
+  async function parse3mf(file) {
+    const zip = await openZip(file);
+    const info = await zip.text("Metadata/slice_info.config");
+    if (info) {
+      const pred = [...info.matchAll(/key="prediction"\s+value="([\d.]+)"/g)].map((m) => parseFloat(m[1]));
+      let weights = [...info.matchAll(/key="weight"\s+value="([\d.]+)"/g)].map((m) => parseFloat(m[1]));
+      if (!weights.length) weights = [...info.matchAll(/used_g="([\d.]+)"/g)].map((m) => parseFloat(m[1]));
+      if (pred.length) {
+        return { seconds: pred.reduce((a, b) => a + b, 0), grams: weights.length ? weights.reduce((a, b) => a + b, 0) : null,
+                 note: pred.length > 1 ? "Added up " + pred.length + " plates." : "" };
+      }
+    }
+    const g = zip.names.find((n) => /\.gcode$/i.test(n));
+    if (g) return parseGcode(await zip.text(g));
+    throw new Error("This 3MF isn't sliced yet. In your slicer, slice the plate and use Export plate sliced file, or export G-code.");
+  }
+
+  function applyTime() {
+    if (!imported) return;
+    const pct = $("adjTime").checked ? parseFloat($("speed").selectedOptions[0].dataset.pct) : 100;
+    const mins = Math.round(imported.seconds * 100 / pct / 60);
+    $("hours").value = Math.floor(mins / 60);
+    $("minutes").value = mins % 60;
+  }
+
+  function setStatus(msg, kind) { const s = $("dropStatus"); s.textContent = msg; s.className = kind || ""; }
+
+  async function importFile(file) {
+    if (!file) return;
+    setStatus("Reading " + file.name + "…");
+    try {
+      const res = /\.3mf$/i.test(file.name) ? await parse3mf(file) : parseGcode(await readGcodeText(file));
+      if (res.grams == null && res.seconds == null) {
+        throw new Error("No filament weight or print time found in " + file.name + ". Export it from Bambu Studio, OrcaSlicer, PrusaSlicer or Cura.");
+      }
+      const found = [];
+      if (res.grams != null) { $("grams").value = +res.grams.toFixed(1); found.push(res.grams.toFixed(1) + " g"); }
+      if (res.seconds != null) {
+        imported = { seconds: res.seconds };
+        $("adjWrap").hidden = false;
+        applyTime();
+        found.push(fmtDur(res.seconds) + " in the slicer");
+      }
+      const missing = res.grams == null ? " Weight not found, enter it below." : res.seconds == null ? " Time not found, enter it below." : "";
+      setStatus(file.name + ": " + found.join(", ") + "." + missing + (res.note ? " " + res.note : ""), "ok");
+      render();
+    } catch (err) {
+      setStatus(err.message || "Couldn't read " + file.name + ".", "err");
+    }
+  }
+
+  $("file").addEventListener("change", (e) => { importFile(e.target.files[0]); e.target.value = ""; });
+  const drop = $("drop");
+  ["dragenter", "dragover"].forEach((t) => document.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) drop.classList.remove("over"); });
+  document.addEventListener("drop", (e) => {
+    e.preventDefault(); drop.classList.remove("over");
+    importFile(e.dataTransfer.files[0]);
+  });
+
+  $("form").addEventListener("input", (e) => {
+    const id = e.target.id;
+    if (id === "speed" || id === "adjTime") applyTime();
+    if (id === "hours" || id === "minutes") { imported = null; $("adjWrap").hidden = true; }
+    render();
+  });
+  $("form").addEventListener("submit", (e) => e.preventDefault());
+  $("curRSD").addEventListener("click", () => setCurrency("RSD"));
+  $("curUSD").addEventListener("click", () => setCurrency("USD"));
+  document.querySelectorAll(".tier").forEach((b) => b.addEventListener("click", () => { tier = b.dataset.tier; render(); }));
+  $("reset").addEventListener("click", () => {
+    ids.forEach((k) => $(k).value = defaults[k]);
+    cur = "RSD"; tier = "mid";
+    imported = null; $("adjWrap").hidden = true;
+    setStatus("Drop a .gcode or Bambu .gcode.3mf file here to fill in the weight and print time.");
+    render();
+    $("toast").textContent = "Reset to the 100 g / 6 h example";
+  });
+  $("copy").addEventListener("click", () => {
+    const text = quoteText();
+    const fb = $("copyFallback");
+    const p = navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(text) : Promise.reject();
+    p.then(() => { $("toast").textContent = "Quote copied"; fb.hidden = true; })
+     .catch(() => { fb.value = text; fb.hidden = false; fb.select(); $("toast").textContent = "Select and copy the text below"; });
+  });
+
+  // Specular highlight follows the pointer across each glass panel
+  document.addEventListener("pointermove", (e) => {
+    document.querySelectorAll(".glass").forEach((el) => {
+      const b = el.getBoundingClientRect();
+      el.style.setProperty("--mx", (e.clientX - b.left) + "px");
+      el.style.setProperty("--my", (e.clientY - b.top) + "px");
+    });
+  }, { passive: true });
+
+  // Phone: tap the floating price to jump to the details; hide it while the details are on screen
+  const quote = document.querySelector(".quote");
+  $("pricebar").addEventListener("click", () => quote.scrollIntoView({ behavior: "smooth", block: "start" }));
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(([e]) => $("pricebar").classList.toggle("away", e.isIntersecting), { threshold: 0.25 }).observe(quote);
+  }
+
+  load();
+  render();
+})();
+</script>
+<script>if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js");</script>
+</body>
+</html>
